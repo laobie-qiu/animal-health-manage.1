@@ -52,50 +52,43 @@ const IndexPage = () => {
     }
   }
 
-  const handleAddAnimal = () => {
-    Taro.showModal({
-      title: `添加${currentType === 'horse' ? '马' : '驴'}`,
-      content: '请输入动物名称',
-      editable: true,
-      placeholderText: '动物名称',
-    } as any)
-      .then((res) => {
-        if (res.confirm && (res as any).content && (res as any).content.trim()) {
-          const animalName = (res as any).content.trim()
-          addAnimalData(animalName)
-        }
-      })
-      .catch(() => {
-        console.log('User cancelled')
-      })
-  }
-
-  const addAnimalData = async (name: string) => {
+  const handleAddAnimal = async () => {
     try {
-      await Network.request({
-        url: '/api/animals',
-        method: 'POST',
-        data: {
-          name,
-          type: currentType,
-          age: 0,
-          healthStatus: 'healthy',
-        },
+      const inputValue = await Taro.prompt({
+        title: `添加${currentType === 'horse' ? '马' : '驴'}`,
+        placeholder: '请输入动物名称',
       })
-      loadAnimals()
-      Taro.showToast({ title: '添加成功', icon: 'success' })
-    } catch (error) {
-      console.error('Failed to add animal:', error)
-      // 模拟添加成功
-      const newAnimal: Animal = {
-        id: Date.now().toString(),
-        name,
-        type: currentType,
-        age: 0,
-        healthStatus: 'healthy',
+
+      if (inputValue && inputValue.trim()) {
+        try {
+          await Network.request({
+            url: '/api/animals',
+            method: 'POST',
+            data: {
+              name: inputValue.trim(),
+              type: currentType,
+              age: 0,
+              healthStatus: 'healthy',
+            },
+          })
+          loadAnimals()
+          Taro.showToast({ title: '添加成功', icon: 'success' })
+        } catch (error) {
+          console.error('Failed to add animal:', error)
+          // 模拟添加成功
+          const newAnimal: Animal = {
+            id: Date.now().toString(),
+            name: inputValue.trim(),
+            type: currentType,
+            age: 0,
+            healthStatus: 'healthy',
+          }
+          setAnimals([...animals, newAnimal])
+          Taro.showToast({ title: '添加成功', icon: 'success' })
+        }
       }
-      setAnimals([...animals, newAnimal])
-      Taro.showToast({ title: '添加成功', icon: 'success' })
+    } catch (err) {
+      console.log('User cancelled input')
     }
   }
 
