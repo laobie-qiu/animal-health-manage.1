@@ -68,38 +68,44 @@ const DiagnosisPage = () => {
     }
   }
 
-  const handleAddAnimal = async () => {
+  const handleAddAnimal = () => {
+    Taro.showModal({
+      title: `添加${animalType === 'horse' ? '马' : '驴'}`,
+      content: '请输入动物名称',
+      editable: true,
+      placeholderText: '动物名称',
+    } as any)
+      .then((res) => {
+        if (res.confirm && (res as any).content && (res as any).content.trim()) {
+          addAnimalToServer((res as any).content.trim())
+        }
+      })
+      .catch(() => {
+        console.log('User cancelled')
+      })
+  }
+
+  const addAnimalToServer = async (name: string) => {
     try {
-      const inputValue = await Taro.prompt({
-        title: `添加${animalType === 'horse' ? '马' : '驴'}`,
-        placeholder: '请输入动物名称',
+      const res = await Network.request({
+        url: '/api/animals',
+        method: 'POST',
+        data: {
+          name,
+          type: animalType,
+          age: 0,
+          healthStatus: 'healthy',
+        },
       })
 
-      if (inputValue && inputValue.trim()) {
-        try {
-          const res = await Network.request({
-            url: '/api/animals',
-            method: 'POST',
-            data: {
-              name: inputValue.trim(),
-              type: animalType,
-              age: 0,
-              healthStatus: 'healthy',
-            },
-          })
-
-          if (res.data?.code === 200) {
-            setSelectedAnimal(res.data.data)
-            setShowAddAnimal(false)
-            Taro.showToast({ title: '添加成功', icon: 'success' })
-          }
-        } catch (error) {
-          console.error('Failed to add animal:', error)
-          Taro.showToast({ title: '添加失败', icon: 'error' })
-        }
+      if (res.data?.code === 200) {
+        setSelectedAnimal(res.data.data)
+        setShowAddAnimal(false)
+        Taro.showToast({ title: '添加成功', icon: 'success' })
       }
-    } catch (err) {
-      console.log('User cancelled input')
+    } catch (error) {
+      console.error('Failed to add animal:', error)
+      Taro.showToast({ title: '添加失败', icon: 'error' })
     }
   }
 
@@ -107,7 +113,7 @@ const DiagnosisPage = () => {
     Taro.showActionSheet({
       itemList: ['马', '驴'],
       success: (res) => {
-        if (!res.cancel) {
+        if (!(res as any).cancel) {
           setAnimalType(res.tapIndex === 0 ? 'horse' : 'donkey')
           setShowAddAnimal(true)
         }
