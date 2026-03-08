@@ -24,6 +24,8 @@ const DiagnosisPage = () => {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([])
   const [diagnosing, setDiagnosing] = useState(false)
   const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null)
+  const [showAddAnimal, setShowAddAnimal] = useState(false)
+  const [animalType, setAnimalType] = useState<'horse' | 'donkey'>('horse')
 
   const symptoms: Symptom[] = [
     { id: '1', name: '食欲不振', category: 'general', severity: 'moderate' },
@@ -50,7 +52,7 @@ const DiagnosisPage = () => {
     try {
       const res = await Network.request({
         url: `/api/animals/${animalId}`,
-        method: 'GET'
+        method: 'GET',
       })
       if (res.data?.code === 200) {
         setSelectedAnimal(res.data.data)
@@ -61,9 +63,56 @@ const DiagnosisPage = () => {
       setSelectedAnimal({
         id: animalId,
         name: '小红马',
-        type: 'horse'
+        type: 'horse',
       })
     }
+  }
+
+  const handleAddAnimal = async () => {
+    try {
+      const inputValue = await Taro.prompt({
+        title: `添加${animalType === 'horse' ? '马' : '驴'}`,
+        placeholder: '请输入动物名称',
+      })
+
+      if (inputValue && inputValue.trim()) {
+        try {
+          const res = await Network.request({
+            url: '/api/animals',
+            method: 'POST',
+            data: {
+              name: inputValue.trim(),
+              type: animalType,
+              age: 0,
+              healthStatus: 'healthy',
+            },
+          })
+
+          if (res.data?.code === 200) {
+            setSelectedAnimal(res.data.data)
+            setShowAddAnimal(false)
+            Taro.showToast({ title: '添加成功', icon: 'success' })
+          }
+        } catch (error) {
+          console.error('Failed to add animal:', error)
+          Taro.showToast({ title: '添加失败', icon: 'error' })
+        }
+      }
+    } catch (err) {
+      console.log('User cancelled input')
+    }
+  }
+
+  const handleSelectAnimal = () => {
+    Taro.showActionSheet({
+      itemList: ['马', '驴'],
+      success: (res) => {
+        if (!res.cancel) {
+          setAnimalType(res.tapIndex === 0 ? 'horse' : 'donkey')
+          setShowAddAnimal(true)
+        }
+      },
+    })
   }
 
   const toggleSymptom = (symptomId: string) => {
@@ -152,23 +201,69 @@ const DiagnosisPage = () => {
         {/* 动物信息卡片 */}
         {selectedAnimal ? (
           <View className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 mb-4">
-            <View className="flex items-center gap-4">
-              <View className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg">
-                <Text className="text-3xl">{selectedAnimal.type === 'horse' ? '🐴' : '🦙'}</Text>
+            <View className="flex items-center justify-between">
+              <View className="flex items-center gap-4">
+                <View className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg">
+                  <Text className="text-3xl">{selectedAnimal.type === 'horse' ? '🐴' : '🦙'}</Text>
+                </View>
+                <View>
+                  <Text className="block text-xl font-bold text-white mb-1">
+                    {selectedAnimal.name}
+                  </Text>
+                  <Text className="block text-sm text-white opacity-90">
+                    {selectedAnimal.type === 'horse' ? '马匹' : '驴'}
+                  </Text>
+                </View>
               </View>
-              <View>
-                <Text className="block text-xl font-bold text-white mb-1">
-                  {selectedAnimal.name}
-                </Text>
-                <Text className="block text-sm text-white opacity-90">
-                  {selectedAnimal.type === 'horse' ? '马匹' : '驴'}
-                </Text>
-              </View>
+              <Button
+                size="mini"
+                className="bg-white text-orange-500 rounded-full px-3 py-1 text-sm"
+                onClick={() => setSelectedAnimal(null)}
+              >
+                切换
+              </Button>
             </View>
           </View>
         ) : (
           <View className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 mb-4">
-            <Text className="block text-white text-base">请先选择动物</Text>
+            <View className="flex items-center justify-between">
+              <Text className="block text-white text-base font-medium">请先选择或添加动物</Text>
+              <Button
+                size="mini"
+                className="bg-white text-orange-500 rounded-full px-4 py-2 text-sm font-semibold"
+                onClick={handleSelectAnimal}
+              >
+                + 添加
+              </Button>
+            </View>
+          </View>
+        )}
+
+        {/* 添加动物选项 */}
+        {showAddAnimal && (
+          <View className="px-4 mb-4">
+            <View className="bg-white rounded-2xl shadow-lg p-4">
+              <View className="flex items-center justify-between mb-4">
+                <Text className="block text-lg font-bold text-gray-800">
+                  添加{animalType === 'horse' ? '马' : '驴'}
+                </Text>
+                <Text
+                  className="text-gray-400 text-xl"
+                  onClick={() => setShowAddAnimal(false)}
+                >
+                  ✕
+                </Text>
+              </View>
+              <Text className="block text-gray-600 text-sm mb-4">
+                点击下方按钮输入动物名称
+              </Text>
+              <Button
+                className="w-full bg-orange-500 text-white rounded-xl py-3 text-base font-semibold"
+                onClick={handleAddAnimal}
+              >
+                输入名称并添加
+              </Button>
+            </View>
           </View>
         )}
 
