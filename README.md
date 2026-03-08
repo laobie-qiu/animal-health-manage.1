@@ -1,6 +1,13 @@
-# Coze Mini Program
+# 马驴健康管家
 
-这是一个基于 [Taro 4](https://docs.taro.zone/docs/) + [Nest.js](https://nestjs.com/) 的前后端分离项目，由扣子编程 CLI 创建。
+一个基于 [Taro 4](https://docs.taro.zone/docs/) + [Nest.js](https://nestjs.com/) 的马和驴疾病诊治小程序，提供专业的动物疾病诊断和治疗指导。
+
+## 🎨 功能特点
+
+- **动物标识管理**: 支持马和驴的添加、管理和健康状态追踪
+- **智能疾病诊断**: 根据症状选择，提供 AI 辅助诊断和治疗方案
+- **诊断历史记录**: 查看所有历史诊断记录，方便追踪动物健康状况
+- **色彩鲜艳 UI**: 采用活力橙红、生命绿等专业配色，界面友好
 
 ## 技术栈
 
@@ -47,11 +54,20 @@
 └── project.config.json       # 微信小程序项目配置
 ```
 
-## 快速开始
+## 📦 安装与运行
+
+### 环境要求
+- Node.js >= 18
+- pnpm >= 8
 
 ### 安装依赖
 
 ```bash
+# 克隆项目
+git clone <your-repo-url>
+cd horse-donkey-health-manager
+
+# 安装依赖
 pnpm install
 ```
 
@@ -749,3 +765,398 @@ create(@Body() body: unknown) {
   return this.userService.create(result.data);
 }
 ```
+
+
+## 🚀 GitHub 部署指南
+
+### 方案一：GitHub Pages 部署 H5 版本
+
+#### 1. 配置 GitHub Pages
+
+在你的 GitHub 仓库中：
+
+1. 进入 **Settings** > **Pages**
+2. 在 **Build and deployment** 中选择：
+   - **Source**: GitHub Actions
+   - **Or**: Deploy from a branch
+3. 如果选择从分支部署：
+   - **Branch**: `main`
+   - **Folder**: `/ (root)` 或 `/dist-web`
+
+#### 2. 创建 GitHub Actions 工作流（自动部署）
+
+创建 `.github/workflows/deploy.yml` 文件：
+
+```yaml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build H5
+        run: pnpm build:web
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist-web
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+#### 3. 本地手动部署到 GitHub Pages
+
+```bash
+# 构建 H5 版本
+pnpm build:web
+
+# 安装 gh-pages（如果还没安装）
+npm install -g gh-pages
+
+# 部署到 GitHub Pages
+gh-pages -d dist-web
+```
+
+#### 4. 访问应用
+
+部署成功后，访问地址为：
+```
+https://<your-username>.github.io/<your-repo-name>
+```
+
+---
+
+### 方案二：使用 Vercel 部署 H5 版本
+
+#### 1. 安装 Vercel CLI
+
+```bash
+pnpm add -g vercel
+```
+
+#### 2. 部署到 Vercel
+
+```bash
+# 登录 Vercel
+vercel login
+
+# 部署
+vercel
+
+# 生产环境部署
+vercel --prod
+```
+
+#### 3. 配置 vercel.json（可选）
+
+在项目根目录创建 `vercel.json`：
+
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist-web"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
+```
+
+---
+
+### 方案三：微信小程序部署（使用 CI/CD）
+
+#### 1. 配置小程序密钥
+
+在 GitHub 仓库中设置 Secrets：
+- 进入 **Settings** > **Secrets and variables** > **Actions**
+- 添加以下 Secrets：
+  - `WECHAT_APPID`: 你的小程序 AppID
+  - `WECHAT_PRIVATE_KEY`: 你的小程序密钥文件内容
+
+#### 2. 创建 GitHub Actions 工作流
+
+创建 `.github/workflows/deploy-weapp.yml`：
+
+```yaml
+name: Deploy WeChat Mini Program
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build WeChat Mini Program
+        run: pnpm build:weapp
+
+      - name: Upload to WeChat
+        run: |
+          pnpm upload-weapp
+        env:
+          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
+          WECHAT_PRIVATE_KEY: ${{ secrets.WECHAT_PRIVATE_KEY }}
+```
+
+#### 3. 本地上传小程序
+
+```bash
+# 构建小程序
+pnpm build:weapp
+
+# 使用微信开发者工具上传
+# 打开微信开发者工具，导入 dist 目录
+# 点击上传按钮
+```
+
+---
+
+### 方案四：Docker 部署（包含前后端）
+
+#### 1. 创建 Dockerfile
+
+在项目根目录创建 `Dockerfile`：
+
+```dockerfile
+# 多阶段构建
+# 阶段1: 构建前端
+FROM node:20-alpine AS builder-web
+
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+COPY . .
+RUN pnpm build:web
+
+# 阶段2: 构建后端
+FROM node:20-alpine AS builder-server
+
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+COPY . .
+RUN pnpm build:server
+
+# 阶段3: 运行应用
+FROM node:20-alpine
+
+WORKDIR /app
+COPY --from=builder-server /app/server ./server
+COPY --from=builder-server /app/node_modules ./node_modules
+COPY --from=builder-server /app/package.json ./
+COPY --from=builder-web /app/dist-web ./dist-web
+
+EXPOSE 3000
+EXPOSE 5000
+
+CMD ["node", "server/dist/main.js"]
+```
+
+#### 2. 创建 docker-compose.yml
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+    restart: always
+```
+
+#### 3. 构建和运行
+
+```bash
+# 构建镜像
+docker-compose build
+
+# 运行容器
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+```
+
+---
+
+## 📝 项目配置
+
+### 环境变量
+
+创建 `.env.local` 文件（本地开发）或在 GitHub Secrets 中配置（生产环境）：
+
+```env
+# 后端配置
+SERVER_PORT=3000
+NODE_ENV=development
+
+# 数据库配置（如果使用）
+DATABASE_URL=your-database-url
+
+# 小程序配置
+WECHAT_APPID=your-wechat-appid
+WECHAT_SECRET=your-wechat-secret
+
+# API 域名配置
+API_DOMAIN=https://your-api-domain.com
+```
+
+### 微信小程序配置
+
+编辑 `project.config.json`：
+
+```json
+{
+  "appid": "your-wechat-appid",
+  "projectname": "马驴健康管家",
+  "description": "马和驴疾病诊治小程序",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": true,
+    "minified": true
+  }
+}
+```
+
+---
+
+## 🔧 开发规范
+
+### 提交代码规范
+
+```bash
+# 添加文件
+git add .
+
+# 提交代码（遵循 Conventional Commits 规范）
+git commit -m "feat: 添加新功能"
+git commit -m "fix: 修复bug"
+git commit -m "docs: 更新文档"
+git commit -m "style: 优化样式"
+git commit -m "refactor: 重构代码"
+git commit -m "test: 添加测试"
+git commit -m "chore: 构建/工具变动"
+
+# 推送到 GitHub
+git push origin main
+```
+
+### 分支管理
+
+- `main`: 主分支，稳定版本
+- `dev`: 开发分支
+- `feature/*`: 功能分支
+- `fix/*`: 修复分支
+
+---
+
+## 📸 预览截图
+
+（待补充截图）
+
+---
+
+## 🤝 贡献指南
+
+欢迎提交 Issue 和 Pull Request！
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'feat: Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+---
+
+## 📄 许可证
+
+MIT License
+
+---
+
+## 👨‍💻 作者
+
+[Your Name] - [@your-username](https://github.com/your-username)
+
+---
+
+## 🙏 致谢
+
+- [Taro](https://taro.zone/) - 多端统一开发框架
+- [NestJS](https://nestjs.com/) - 渐进式 Node.js 框架
+- [Tailwind CSS](https://tailwindcss.com/) - 原子化 CSS 框架
+- [Lucide](https://lucide.dev/) - 精美图标库
